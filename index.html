@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>TutorLedger</title>
+
+<!-- PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TutorLedger">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1208">
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1208;
+    --paper: #faf7f2;
+    --cream: #f2ede4;
+    --amber: #d4820a;
+    --amber-light: #f5c96a;
+    --amber-pale: #fdf3dc;
+    --green: #2d6a4f;
+    --green-light: #b7e4c7;
+    --green-pale: #eaf7ef;
+    --red: #c1440e;
+    --red-pale: #fdeee8;
+    --blue: #1d4ed8;
+    --blue-pale: #eff6ff;
+    --blue-border: #93c5fd;
+    --muted: #8a7d6b;
+    --border: #ddd5c4;
+    --shadow: 0 2px 12px rgba(26,18,8,0.08);
+    --shadow-lg: 0 8px 32px rgba(26,18,8,0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
+
+  /* HEADER */
+  header {
+    background: var(--ink); color: var(--paper);
+    padding: 14px 22px; display: flex; align-items: center;
+    justify-content: space-between; position: sticky; top: 0; z-index: 100; gap: 10px;
+  }
+  .logo { font-family: 'DM Serif Display', serif; font-size: 1.45rem; letter-spacing: -0.5px; flex-shrink: 0; }
+  .logo span { color: var(--amber-light); font-style: italic; }
+  .header-right { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .week-nav { display: flex; align-items: center; gap: 7px; color: #ccc; }
+  .week-nav button {
+    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    color: white; width: 26px; height: 26px; border-radius: 6px; cursor: pointer; font-size: 1rem;
+  }
+  .week-nav button:hover { background: rgba(255,255,255,0.2); }
+  #week-label { font-family: 'DM Mono', monospace; font-size: 0.73rem; white-space: nowrap; }
+
+  .sync-pill {
+    display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: #aaa;
+    cursor: pointer; padding: 4px 9px; border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.15); transition: background 0.15s; white-space: nowrap;
+  }
+  .sync-pill:hover { background: rgba(255,255,255,0.1); }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #555; flex-shrink: 0; transition: background 0.3s; }
+  .sync-dot.ok      { background: #4ade80; box-shadow: 0 0 5px #4ade80; }
+  .sync-dot.syncing { background: var(--amber-light); animation: blink 0.9s infinite; }
+  .sync-dot.err     { background: #f87171; }
+  @keyframes blink { 0%,100%{opacity:1}50%{opacity:0.2} }
+
+  .btn { padding: 7px 14px; border-radius: 8px; border: none; font-size: 0.83rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; }
+  .btn-primary   { background: var(--amber); color: white; }
+  .btn-primary:hover { background: #b86e08; }
+  .btn-secondary { background: var(--cream); color: var(--muted); }
+  .btn-secondary:hover { background: var(--border); color: var(--ink); }
+  .btn-danger    { background: var(--red-pale); color: var(--red); }
+  .btn-danger:hover { background: #f9ddd5; }
+  .btn-ghost     { background: rgba(255,255,255,0.1); color: white; border: 1px solid rgba(255,255,255,0.2); }
+  .btn-ghost:hover { background: rgba(255,255,255,0.2); }
+
+  /* LAYOUT */
+  .app { display: flex; height: calc(100vh - 55px); }
+
+  /* SIDEBAR */
+  .sidebar { width: 268px; min-width: 268px; background: var(--cream); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .sidebar-section { padding: 15px 17px; border-bottom: 1px solid var(--border); }
+  .sidebar-title { font-size: 0.67rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: var(--muted); margin-bottom: 10px; }
+
+  .earnings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .earn-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 10px 11px; }
+  .earn-card .lbl { font-size: 0.63rem; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.4px; }
+  .earn-card .amt { font-family: 'DM Serif Display', serif; font-size: 1.2rem; color: var(--ink); margin-top: 1px; }
+  .earn-card.hi { background: var(--amber-pale); border-color: var(--amber-light); }
+  .earn-card.hi .amt { color: var(--amber); }
+
+  .students-scroll { overflow-y: auto; flex: 1; padding: 11px 15px; }
+  .student-item { display: flex; align-items: center; gap: 8px; padding: 8px 9px; border-radius: 9px; cursor: pointer; transition: background 0.15s; margin-bottom: 3px; }
+  .student-item:hover { background: white; }
+  .s-avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.78rem; flex-shrink: 0; }
+  .s-info { flex: 1; min-width: 0; }
+  .s-name { font-size: 0.86rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .s-rate { font-size: 0.7rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .s-hrs  { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--green); font-weight: 500; }
+
+  .add-s-btn { display: flex; align-items: center; gap: 7px; width: 100%; padding: 7px 9px; background: transparent; border: 1.5px dashed var(--border); border-radius: 9px; cursor: pointer; color: var(--muted); font-size: 0.8rem; font-family: 'DM Sans', sans-serif; transition: all 0.15s; margin-top: 3px; }
+  .add-s-btn:hover { border-color: var(--amber); color: var(--amber); background: var(--amber-pale); }
+
+  /* MAIN */
+  .main { flex: 1; overflow: auto; display: flex; flex-direction: column; }
+  .banners { padding: 14px 22px 0; display: flex; flex-direction: column; gap: 7px; }
+  .banner { border-radius: 10px; padding: 10px 13px; display: flex; align-items: center; gap: 10px; }
+  .banner.unpaid { background: var(--red-pale); border: 1px solid #f5c4b0; }
+  .banner.setup  { background: var(--blue-pale); border: 1px solid var(--blue-border); }
+  .b-icon { font-size: 1rem; flex-shrink: 0; }
+  .b-text { flex: 1; }
+  .b-title { font-size: 0.8rem; font-weight: 600; }
+  .banner.unpaid .b-title { color: var(--red); }
+  .banner.setup  .b-title { color: var(--blue); }
+  .b-detail { font-size: 0.7rem; color: var(--muted); margin-top: 1px; font-family: 'DM Mono', monospace; }
+  .b-btn { font-size: 0.7rem; font-weight: 600; border: none; border-radius: 6px; padding: 5px 9px; cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+  .banner.unpaid .b-btn { color: var(--red);  background: rgba(193,68,14,0.1); }
+  .banner.setup  .b-btn { color: var(--blue); background: rgba(29,78,216,0.1); }
+
+  /* GRID */
+  .week-grid-wrap { padding: 18px 22px; flex: 1; }
+  .week-grid { display: grid; grid-template-columns: 54px repeat(7,1fr); border: 1px solid var(--border); border-radius: 13px; overflow: hidden; background: white; box-shadow: var(--shadow); min-height: 460px; }
+  .day-header { text-align: center; padding: 11px 5px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); }
+  .day-header:last-child { border-right: none; }
+  .day-header.tc { background: var(--cream); }
+  .day-name { font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+  .day-date { font-family: 'DM Serif Display', serif; font-size: 1.1rem; }
+  .day-header.today { background: var(--amber-pale); }
+  .day-header.today .day-date { color: var(--amber); }
+  .time-label { text-align: right; padding: 0 7px; height: 60px; display: flex; align-items: flex-start; justify-content: flex-end; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--cream); }
+  .time-label span { font-family: 'DM Mono', monospace; font-size: 0.6rem; color: var(--muted); margin-top: 4px; }
+  .day-col { border-right: 1px solid var(--border); position: relative; }
+  .day-col:last-child { border-right: none; }
+  .time-slot { height: 60px; border-bottom: 1px solid var(--border); position: relative; cursor: pointer; transition: background 0.1s; }
+  .time-slot:last-child { border-bottom: none; }
+  .time-slot:hover { background: var(--amber-pale); }
+  .time-slot:hover::after { content:'+'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--amber); font-size:1rem; opacity:0.5; }
+
+  .lesson-block { position: absolute; left: 3px; right: 3px; border-radius: 7px; padding: 4px 6px; cursor: pointer; z-index: 2; transition: transform 0.1s, box-shadow 0.1s; overflow: hidden; }
+  .lesson-block:hover { transform: scale(1.02); box-shadow: var(--shadow-lg); z-index: 10; }
+  .lb-name  { font-size: 0.72rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-time  { font-size: 0.6rem; font-family: 'DM Mono', monospace; opacity: 0.75; margin-top: 1px; }
+  .lb-price { font-size: 0.65rem; font-weight: 700; font-family: 'DM Mono', monospace; margin-top: 1px; }
+  .lb-recur { font-size: 0.56rem; opacity: 0.6; margin-top: 1px; }
+  .lb-paid  { position: absolute; top: 3px; right: 4px; font-size: 0.56rem; background: rgba(255,255,255,0.35); border-radius: 3px; padding: 1px 3px; font-weight: 600; }
+
+  /* MODALS */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,18,8,0.5); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--paper); border-radius: 18px; padding: 26px; width: 100%; max-width: 440px; box-shadow: var(--shadow-lg); animation: slideUp 0.2s ease; max-height: 92vh; overflow-y: auto; }
+  @keyframes slideUp { from{transform:translateY(18px);opacity:0} to{transform:translateY(0);opacity:1} }
+  .modal h2 { font-family: 'DM Serif Display', serif; font-size: 1.35rem; margin-bottom: 16px; }
+
+  .form-row { margin-bottom: 12px; }
+  .form-row label { display: block; font-size: 0.72rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .form-row input, .form-row select { width: 100%; padding: 8px 10px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.86rem; font-family: 'DM Sans', sans-serif; background: white; color: var(--ink); outline: none; transition: border-color 0.15s; }
+  .form-row input:focus, .form-row select:focus { border-color: var(--amber); }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .modal-actions .btn-primary { flex: 1; }
+
+  .toggle-row { display: flex; align-items: center; gap: 9px; padding: 8px 12px; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer; background: white; transition: all 0.15s; user-select: none; }
+  .toggle-row.paid-on  { background: var(--green-pale); border-color: var(--green-light); }
+  .toggle-row.recur-on { background: var(--blue-pale);  border-color: var(--blue-border); }
+  .tpill { width: 34px; height: 19px; border-radius: 10px; background: var(--border); position: relative; transition: background 0.2s; flex-shrink: 0; }
+  .tpill::after { content:''; position:absolute; width:13px; height:13px; background:white; border-radius:50%; top:3px; left:3px; transition:transform 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+  .toggle-row.paid-on  .tpill { background: var(--green); }
+  .toggle-row.recur-on .tpill { background: var(--blue); }
+  .toggle-row.paid-on  .tpill::after,
+  .toggle-row.recur-on .tpill::after { transform: translateX(15px); }
+  .t-label { font-size: 0.86rem; font-weight: 600; flex: 1; }
+  .t-aside { font-size: 0.7rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+  .toggle-row.paid-on  .t-aside { color: var(--green); }
+  .toggle-row.recur-on .t-aside { color: var(--blue);  }
+
+  .recur-sub { display: none; margin-top: 6px; background: var(--blue-pale); border: 1.5px solid var(--blue-border); border-radius: 8px; padding: 9px 12px; align-items: center; gap: 8px; }
+  .recur-sub.on { display: flex; }
+  .recur-sub label { font-size: 0.76rem; font-weight: 600; color: var(--blue); white-space: nowrap; }
+  .recur-sub input { width: 54px; padding: 4px 7px; border: 1.5px solid var(--blue-border); border-radius: 6px; font-family: 'DM Mono', monospace; font-size: 0.86rem; outline: none; background: white; color: var(--ink); }
+  .recur-until { font-size: 0.7rem; color: var(--blue); font-family: 'DM Mono', monospace; flex: 1; text-align: right; }
+
+  .color-dots { display: flex; gap: 6px; flex-wrap: wrap; }
+  .color-dot { width: 19px; height: 19px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.1s; }
+  .color-dot:hover { transform: scale(1.2); }
+  .color-dot.sel { border-color: var(--ink); transform: scale(1.15); }
+
+  /* SETUP MODAL */
+  .setup-step { margin-bottom: 14px; }
+  .snum { display: inline-flex; width: 20px; height: 20px; border-radius: 50%; background: var(--blue); color: white; font-size: 0.68rem; font-weight: 700; align-items: center; justify-content: center; margin-right: 6px; flex-shrink: 0; }
+  .stitle { font-weight: 600; font-size: 0.86rem; display: flex; align-items: center; margin-bottom: 5px; }
+  .setup-step p { font-size: 0.8rem; color: var(--muted); line-height: 1.55; margin-bottom: 5px; }
+  .setup-step a { color: var(--blue); text-decoration: none; font-weight: 600; }
+  .setup-step a:hover { text-decoration: underline; }
+  .field-hint { font-size: 0.7rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+  hr.sdiv { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+  code { background: var(--cream); padding: 1px 4px; border-radius: 3px; font-size: 0.8em; }
+
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 140px; color: var(--muted); font-size: 0.8rem; gap: 4px; }
+  .empty-state .icon { font-size: 1.7rem; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Tutor<span>Ledger</span></div>
+  <div class="header-right">
+    <div class="week-nav">
+      <button id="prev-week">‹</button>
+      <span id="week-label"></span>
+      <button id="next-week">›</button>
+    </div>
+    <div class="sync-pill" id="sync-pill">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-lbl">Not connected</span>
+    </div>
+    <button class="btn btn-ghost" id="add-lesson-btn">+ Lesson</button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-title">Earnings</div>
+      <div class="earnings-grid">
+        <div class="earn-card hi"><div class="lbl">This Week</div><div class="amt" id="earn-week">₽0</div></div>
+        <div class="earn-card">   <div class="lbl">This Month</div><div class="amt" id="earn-month">₽0</div></div>
+        <div class="earn-card">   <div class="lbl">Paid ✓</div><div class="amt" id="earn-paid"  style="color:var(--green)">₽0</div></div>
+        <div class="earn-card">   <div class="lbl">Unpaid</div><div class="amt" id="earn-unpaid" style="color:var(--red)">₽0</div></div>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-title">Students</div>
+      <button class="add-s-btn" id="add-student-btn"><span>＋</span> Add Student</button>
+    </div>
+    <div class="students-scroll" id="students-list">
+      <div class="empty-state"><span class="icon">🎓</span>No students yet</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="banners" id="banners"></div>
+    <div class="week-grid-wrap"><div class="week-grid" id="week-grid"></div></div>
+  </main>
+</div>
+
+<!-- ══ SETUP MODAL ══════════════════════════════════════ -->
+<div class="modal-overlay" id="setup-modal">
+  <div class="modal" style="max-width:500px">
+    <h2>Connect Google Sheets</h2>
+    <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;line-height:1.6">Your data syncs across all devices via a Google Sheet you own. One-time setup, ~5 minutes.</p>
+
+    <div class="setup-step">
+      <div class="stitle"><span class="snum">1</span>Create a Google Cloud project</div>
+      <p>Go to <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → create a new project (e.g. "TutorLedger").</p>
+    </div>
+    <div class="setup-step">
+      <div class="stitle"><span class="snum">2</span>Enable Google Sheets API</div>
+      <p><strong>APIs & Services → Library</strong> → search "Google Sheets API" → Enable.</p>
+    </div>
+    <div class="setup-step">
+      <div class="stitle"><span class="snum">3</span>Create an API Key</div>
+      <p><strong>Credentials → Create Credentials → API Key</strong>. Copy it here.</p>
+      <div class="form-row" style="margin:0"><label>API Key</label><input type="password" id="cfg-apikey" placeholder="AIzaSy..."></div>
+    </div>
+    <div class="setup-step">
+      <div class="stitle"><span class="snum">4</span>Create OAuth 2.0 Client ID</div>
+      <p><strong>Credentials → Create Credentials → OAuth client ID → Web application</strong>.<br>
+      Under <em>Authorised JavaScript origins</em> add the URL you host this file on (e.g. your GitHub Pages URL or <code>http://localhost</code>).</p>
+      <div class="form-row" style="margin:0"><label>OAuth Client ID</label><input type="text" id="cfg-clientid" placeholder="123456789-abc...apps.googleusercontent.com"></div>
+    </div>
+    <div class="setup-step">
+      <div class="stitle"><span class="snum">5</span>Create a blank Google Sheet &amp; paste its ID</div>
+      <p>Go to <a href="https://sheets.google.com" target="_blank">sheets.google.com</a>, make a new blank sheet. The ID is the long string between <code>/d/</code> and <code>/edit</code> in the URL.</p>
+      <div class="form-row" style="margin:0">
+        <label>Spreadsheet ID</label>
+        <input type="text" id="cfg-sheetid" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+        <div class="field-hint">docs.google.com/spreadsheets/d/<strong>PASTE_THIS_PART</strong>/edit</div>
+      </div>
+    </div>
+    <hr class="sdiv">
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="setup-cancel">Skip for now</button>
+      <button class="btn btn-primary"   id="setup-save">Save &amp; Connect</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ STUDENT MODAL ════════════════════════════════════ -->
+<div class="modal-overlay" id="student-modal">
+  <div class="modal">
+    <h2 id="sm-title">New Student</h2>
+    <div class="form-row"><label>Name</label><input type="text" id="s-name" placeholder="e.g. Anna Ivanova"></div>
+    <div class="form-row-2">
+      <div class="form-row" style="margin:0"><label>Rate (₽/hr)</label><input type="number" id="s-rate" placeholder="1500" min="0"></div>
+      <div class="form-row" style="margin:0"><label>Subject</label><input type="text" id="s-subject" placeholder="Math"></div>
+    </div>
+    <div class="form-row"><label>Color</label><div class="color-dots" id="color-picker"></div></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="student-cancel">Cancel</button>
+      <button class="btn btn-danger"    id="student-delete" style="display:none">Delete</button>
+      <button class="btn btn-primary"   id="student-save">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LESSON MODAL ═════════════════════════════════════ -->
+<div class="modal-overlay" id="lesson-modal">
+  <div class="modal">
+    <h2 id="lm-title">Add Lesson</h2>
+    <div class="form-row"><label>Student</label><select id="l-student"></select></div>
+    <div class="form-row-2">
+      <div class="form-row" style="margin:0"><label>Date</label><input type="date" id="l-date"></div>
+      <div class="form-row" style="margin:0"><label>Start Time</label><input type="time" id="l-start" value="09:00"></div>
+    </div>
+    <div class="form-row-2">
+      <div class="form-row" style="margin:0">
+        <label>Duration</label>
+        <select id="l-dur">
+          <option value="30">30 min</option><option value="45">45 min</option>
+          <option value="60" selected>60 min</option><option value="90">90 min</option>
+          <option value="120">120 min</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin:0"><label>Rate Override (₽)</label><input type="number" id="l-rate" placeholder="Use default"></div>
+    </div>
+    <div class="form-row"><label>Notes</label><input type="text" id="l-notes" placeholder="Optional"></div>
+    <div class="form-row">
+      <div class="toggle-row" id="paid-toggle">
+        <div class="tpill"></div><span class="t-label">Mark as Paid</span><span class="t-aside" id="t-amount"></span>
+      </div>
+    </div>
+    <div class="form-row" id="recur-row">
+      <div class="toggle-row" id="recur-toggle">
+        <div class="tpill"></div><span class="t-label">Repeat weekly</span><span class="t-aside" id="recur-badge">one-time</span>
+      </div>
+      <div class="recur-sub" id="recur-sub">
+        <label>Repeat for</label>
+        <input type="number" id="recur-n" value="4" min="2" max="52">
+        <span style="font-size:0.8rem;font-weight:600;color:var(--blue)">weeks</span>
+        <span class="recur-until" id="recur-until"></span>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="lesson-cancel">Cancel</button>
+      <button class="btn btn-danger"    id="lesson-delete" style="display:none">Delete</button>
+      <button class="btn btn-primary"   id="lesson-save">Save Lesson</button>
+    </div>
+  </div>
+</div>
+
+<!-- Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+// ══ CONFIG ══════════════════════════════════════════════════════
+const LS = {
+  get: k => { try{ return JSON.parse(localStorage.getItem(k)); }catch{ return null; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+
+let cfg      = LS.get('tl_cfg')      || {apiKey:'', clientId:'', sheetId:''};
+let students = LS.get('tl_students') || [];
+let lessons  = LS.get('tl_lessons')  || [];
+
+let weekStart     = getMonday(new Date());
+let editLesson    = null;
+let editStudent   = null;
+let selColor      = 0;
+let paidSt        = false;
+let recurSt       = false;
+let gToken        = null;
+let tokenClient   = null;
+let syncTmr       = null;
+
+const SS = 'Students', SL = 'Lessons';
+
+// ══ COLORS ══════════════════════════════════════════════════════
+const COLORS = [
+  {bg:'#dbeafe',tx:'#1e40af',dot:'#3b82f6'},{bg:'#fce7f3',tx:'#9d174d',dot:'#ec4899'},
+  {bg:'#d1fae5',tx:'#065f46',dot:'#10b981'},{bg:'#fef3c7',tx:'#92400e',dot:'#f59e0b'},
+  {bg:'#ede9fe',tx:'#4c1d95',dot:'#8b5cf6'},{bg:'#fee2e2',tx:'#991b1b',dot:'#ef4444'},
+  {bg:'#cffafe',tx:'#164e63',dot:'#06b6d4'},{bg:'#f0fdf4',tx:'#14532d',dot:'#22c55e'},
+];
+
+// ══ HELPERS ═════════════════════════════════════════════════════
+function getMonday(d){const dt=new Date(d),day=dt.getDay();dt.setDate(dt.getDate()-day+(day===0?-6:1));dt.setHours(0,0,0,0);return dt;}
+function fmt(d){return d.toISOString().split('T')[0];}
+function fmtR(n){return '₽'+Math.round(n);}
+function fmtT(hhmm){const[h,m]=hhmm.split(':').map(Number),p=h>=12?'pm':'am',h12=h%12||12;return m?`${h12}:${String(m).padStart(2,'0')}${p}`:`${h12}${p}`;}
+function addM(hhmm,m){const[h,mm]=hhmm.split(':').map(Number),t=h*60+mm+m;return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;}
+function price(l){const s=students.find(s=>s.id===l.studentId);return(l.rate||(s?s.rate:0))*l.duration/60;}
+function isConfigured(){return cfg.apiKey&&cfg.clientId&&cfg.sheetId;}
+
+// ══ SAVE ════════════════════════════════════════════════════════
+function saveLocal(){LS.set('tl_students',students);LS.set('tl_lessons',lessons);}
+function save(){
+  saveLocal();
+  if(!gToken||!isConfigured())return;
+  clearTimeout(syncTmr);
+  setSyncStatus('syncing','Saving…');
+  syncTmr=setTimeout(pushToSheets,1500);
+}
+
+// ══ SYNC STATUS ══════════════════════════════════════════════════
+function setSyncStatus(state,text){
+  document.getElementById('sync-dot').className='sync-dot '+state;
+  document.getElementById('sync-lbl').textContent=text;
+}
+
+// ══ GOOGLE AUTH ══════════════════════════════════════════════════
+function initGoogleAuth(){
+  if(!isConfigured()||!window.google)return;
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:cfg.clientId,
+    scope:'https://www.googleapis.com/auth/spreadsheets',
+    callback:(r)=>{
+      if(r.error){setSyncStatus('err','Auth failed');return;}
+      gToken=r.access_token;
+      setSyncStatus('ok','Connected');
+      ensureSheets().then(()=>pullFromSheets());
+    }
+  });
+  tokenClient.requestAccessToken({prompt:''});
+}
+
+// ══ SHEETS API ════════════════════════════════════════════════════
+async function sheetsReq(method,path,body){
+  const r=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${cfg.sheetId}${path}`,{
+    method,headers:{'Authorization':`Bearer ${gToken}`,'Content-Type':'application/json'},
+    body:body?JSON.stringify(body):undefined
+  });
+  if(!r.ok)throw new Error('Sheets '+r.status);
+  return r.json();
+}
+
+async function ensureSheets(){
+  try{
+    const info=await sheetsReq('GET','?fields=sheets.properties.title');
+    const titles=info.sheets.map(s=>s.properties.title);
+    const adds=[];
+    if(!titles.includes(SS))adds.push({addSheet:{properties:{title:SS}}});
+    if(!titles.includes(SL))adds.push({addSheet:{properties:{title:SL}}});
+    if(adds.length){
+      await sheetsReq('POST',':batchUpdate',{requests:adds});
+      const hdr=[];
+      if(!titles.includes(SS))hdr.push({range:`${SS}!A1`,values:[['id','name','rate','subject','colorIdx']]});
+      if(!titles.includes(SL))hdr.push({range:`${SL}!A1`,values:[['id','studentId','date','start','duration','rate','notes','paid','recurId','recurIndex','recurTotal']]});
+      if(hdr.length)await sheetsReq('POST','/values:batchUpdate',{valueInputOption:'RAW',data:hdr});
+    }
+  }catch(e){console.warn('ensureSheets',e);}
+}
+
+async function pullFromSheets(){
+  if(!gToken||!isConfigured())return;
+  setSyncStatus('syncing','Syncing…');
+  try{
+    const res=await sheetsReq('GET',`/values:batchGet?ranges=${SS}&ranges=${SL}&majorDimension=ROWS`);
+    const[sv,lv]=res.valueRanges;
+    students=(sv.values||[]).slice(1).map(r=>({id:r[0]||'',name:r[1]||'',rate:parseFloat(r[2])||0,subject:r[3]||'',colorIdx:parseInt(r[4])||0})).filter(s=>s.id);
+    lessons=(lv.values||[]).slice(1).map(r=>({id:r[0]||'',studentId:r[1]||'',date:r[2]||'',start:r[3]||'',duration:parseInt(r[4])||60,rate:r[5]?parseFloat(r[5]):null,notes:r[6]||'',paid:r[7]==='true',recurId:r[8]||null,recurIndex:r[9]!=null?parseInt(r[9]):null,recurTotal:r[10]!=null?parseInt(r[10]):null})).filter(l=>l.id);
+    saveLocal();renderAll();
+    setSyncStatus('ok','Synced '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){setSyncStatus('err','Sync failed');console.error(e);}
+}
+
+async function pushToSheets(){
+  if(!gToken||!isConfigured())return;
+  try{
+    const sV=[['id','name','rate','subject','colorIdx'],...students.map(s=>[s.id,s.name,s.rate,s.subject||'',s.colorIdx])];
+    const lV=[['id','studentId','date','start','duration','rate','notes','paid','recurId','recurIndex','recurTotal'],...lessons.map(l=>[l.id,l.studentId,l.date,l.start,l.duration,l.rate||'',l.notes||'',l.paid?'true':'false',l.recurId||'',l.recurIndex!=null?l.recurIndex:'',l.recurTotal!=null?l.recurTotal:''])];
+    await sheetsReq('POST','/values:batchClear',{ranges:[SS,SL]});
+    await sheetsReq('POST','/values:batchUpdate',{valueInputOption:'RAW',data:[{range:`${SS}!A1`,values:sV},{range:`${SL}!A1`,values:lV}]});
+    setSyncStatus('ok','Saved '+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
+  }catch(e){setSyncStatus('err','Save failed');console.error(e);}
+}
+
+document.getElementById('sync-pill').addEventListener('click',()=>{
+  if(!isConfigured()){openSetup();return;}
+  if(!gToken)tokenClient?.requestAccessToken({prompt:'consent'});
+  else pullFromSheets();
+});
+
+// ══ RENDER ═══════════════════════════════════════════════════════
+const HOURS=Array.from({length:14},(_,i)=>i+7);
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+function renderWeekGrid(){
+  const grid=document.getElementById('week-grid');
+  grid.innerHTML='';
+  const days=Array.from({length:7},(_,i)=>{const d=new Date(weekStart);d.setDate(d.getDate()+i);return d;});
+  const today=fmt(new Date());
+  const o={month:'short',day:'numeric'};
+  document.getElementById('week-label').textContent=days[0].toLocaleDateString('en-GB',o)+' – '+days[6].toLocaleDateString('en-GB',o);
+
+  const tc=document.createElement('div');tc.className='day-header tc';grid.appendChild(tc);
+  days.forEach((d,i)=>{
+    const th=document.createElement('div');
+    th.className='day-header'+(fmt(d)===today?' today':'');
+    th.innerHTML=`<div class="day-name">${DAYS[i]}</div><div class="day-date">${d.getDate()}</div>`;
+    grid.appendChild(th);
+  });
+
+  HOURS.forEach(hour=>{
+    const lbl=document.createElement('div');lbl.className='time-label';lbl.innerHTML=`<span>${hour}:00</span>`;grid.appendChild(lbl);
+    days.forEach(d=>{
+      const col=document.createElement('div');col.className='day-col';
+      const slot=document.createElement('div');slot.className='time-slot';
+      slot.addEventListener('click',()=>openAddLesson(fmt(d),hour));
+      col.appendChild(slot);
+      const ds=fmt(d);
+      lessons.filter(l=>l.date===ds).forEach(l=>{
+        const[lh,lm]=l.start.split(':').map(Number);
+        if(lh!==hour)return;
+        const s=students.find(s=>s.id===l.studentId);
+        const c=COLORS[(s?.colorIdx||0)%COLORS.length];
+        const p=price(l),end=addM(l.start,l.duration);
+        const b=document.createElement('div');b.className='lesson-block';
+        b.style.cssText=`background:${c.bg};color:${c.tx};top:${lm}px;height:${l.duration-4}px;`;
+        b.innerHTML=`<div class="lb-name">${s?.name||'?'}</div><div class="lb-time">${fmtT(l.start)}–${fmtT(end)}</div><div class="lb-price">${fmtR(p)}</div>${l.recurId?`<div class="lb-recur">🔁 ${(l.recurIndex||0)+1}/${l.recurTotal}</div>`:''}<div class="lb-paid">${l.paid?'✓ paid':'unpaid'}</div>`;
+        b.addEventListener('click',e=>{e.stopPropagation();openEditLesson(l);});
+        col.appendChild(b);
+      });
+      grid.appendChild(col);
+    });
+  });
+}
+
+function renderStudents(){
+  const el=document.getElementById('students-list');el.innerHTML='';
+  if(!students.length){el.innerHTML='<div class="empty-state"><span class="icon">🎓</span>No students yet</div>';return;}
+  students.forEach(s=>{
+    const c=COLORS[s.colorIdx%COLORS.length];
+    const hrs=lessons.filter(l=>l.studentId===s.id).reduce((a,l)=>a+l.duration/60,0);
+    const d=document.createElement('div');d.className='student-item';
+    d.innerHTML=`<div class="s-avatar" style="background:${c.bg};color:${c.tx}">${s.name[0].toUpperCase()}</div><div class="s-info"><div class="s-name">${s.name}</div><div class="s-rate">₽${s.rate}/hr${s.subject?' · '+s.subject:''}</div></div><div class="s-hrs">${hrs.toFixed(1)}h</div>`;
+    d.addEventListener('click',()=>openEditStudent(s));
+    el.appendChild(d);
+  });
+}
+
+function renderEarnings(){
+  const now=new Date(),wEnd=new Date(weekStart);wEnd.setDate(wEnd.getDate()+7);
+  const mS=new Date(now.getFullYear(),now.getMonth(),1);
+  let w=0,m=0,pd=0,up=0;
+  lessons.forEach(l=>{const p=price(l),d=new Date(l.date);if(d>=weekStart&&d<wEnd)w+=p;if(d>=mS)m+=p;if(l.paid)pd+=p;else up+=p;});
+  document.getElementById('earn-week').textContent=fmtR(w);
+  document.getElementById('earn-month').textContent=fmtR(m);
+  document.getElementById('earn-paid').textContent=fmtR(pd);
+  document.getElementById('earn-unpaid').textContent=fmtR(up);
+}
+
+function renderBanners(){
+  const el=document.getElementById('banners');el.innerHTML='';
+  if(!isConfigured()){
+    el.innerHTML+=`<div class="banner setup"><div class="b-icon">☁️</div><div class="b-text"><div class="b-title">Set up Google Sheets sync</div><div class="b-detail">Sync across iPhone &amp; Mac automatically</div></div><button class="b-btn" id="open-setup-btn">Set up →</button></div>`;
+    document.getElementById('open-setup-btn')?.addEventListener('click',openSetup);
+  }
+  const ul=lessons.filter(l=>!l.paid),ut=ul.reduce((a,l)=>a+price(l),0);
+  if(ul.length){
+    el.innerHTML+=`<div class="banner unpaid"><div class="b-icon">💸</div><div class="b-text"><div class="b-title">${ul.length} unpaid lesson${ul.length>1?'s':''}</div><div class="b-detail">${fmtR(ut)} outstanding</div></div><button class="b-btn" id="mark-all-paid">Mark all paid</button></div>`;
+    document.getElementById('mark-all-paid')?.addEventListener('click',()=>{lessons.forEach(l=>l.paid=true);save();renderAll();});
+  }
+}
+
+function renderAll(){renderWeekGrid();renderStudents();renderEarnings();renderBanners();}
+
+// ══ SETUP MODAL ═══════════════════════════════════════════════════
+function openSetup(){
+  document.getElementById('cfg-apikey').value=cfg.apiKey||'';
+  document.getElementById('cfg-clientid').value=cfg.clientId||'';
+  document.getElementById('cfg-sheetid').value=cfg.sheetId||'';
+  document.getElementById('setup-modal').classList.add('open');
+}
+document.getElementById('setup-cancel').addEventListener('click',()=>document.getElementById('setup-modal').classList.remove('open'));
+document.getElementById('setup-save').addEventListener('click',()=>{
+  cfg.apiKey=document.getElementById('cfg-apikey').value.trim();
+  cfg.clientId=document.getElementById('cfg-clientid').value.trim();
+  cfg.sheetId=document.getElementById('cfg-sheetid').value.trim();
+  LS.set('tl_cfg',cfg);
+  document.getElementById('setup-modal').classList.remove('open');
+  renderBanners();
+  initGoogleAuth();
+  if(tokenClient)tokenClient.requestAccessToken({prompt:'consent'});
+});
+
+// ══ STUDENT MODAL ═════════════════════════════════════════════════
+function buildColorPicker(sel){
+  const cp=document.getElementById('color-picker');cp.innerHTML='';
+  COLORS.forEach((c,i)=>{
+    const d=document.createElement('div');d.className='color-dot'+(i===sel?' sel':'');
+    d.style.background=c.dot;
+    d.addEventListener('click',()=>{selColor=i;document.querySelectorAll('.color-dot').forEach((x,j)=>x.classList.toggle('sel',j===i));});
+    cp.appendChild(d);
+  });
+}
+function openAddStudent(){
+  editStudent=null;selColor=0;
+  document.getElementById('sm-title').textContent='New Student';
+  document.getElementById('s-name').value='';document.getElementById('s-rate').value='';document.getElementById('s-subject').value='';
+  document.getElementById('student-delete').style.display='none';
+  buildColorPicker(0);document.getElementById('student-modal').classList.add('open');
+}
+function openEditStudent(s){
+  editStudent=s;selColor=s.colorIdx;
+  document.getElementById('sm-title').textContent='Edit Student';
+  document.getElementById('s-name').value=s.name;document.getElementById('s-rate').value=s.rate;document.getElementById('s-subject').value=s.subject||'';
+  document.getElementById('student-delete').style.display='block';
+  buildColorPicker(s.colorIdx);document.getElementById('student-modal').classList.add('open');
+}
+document.getElementById('student-cancel').addEventListener('click',()=>document.getElementById('student-modal').classList.remove('open'));
+document.getElementById('student-delete').addEventListener('click',()=>{
+  if(!editStudent)return;
+  if(!confirm(`Delete ${editStudent.name}? Their lessons will stay.`))return;
+  students=students.filter(s=>s!==editStudent);save();renderAll();
+  document.getElementById('student-modal').classList.remove('open');
+});
+document.getElementById('student-save').addEventListener('click',()=>{
+  const name=document.getElementById('s-name').value.trim();
+  const rate=parseFloat(document.getElementById('s-rate').value)||0;
+  const subject=document.getElementById('s-subject').value.trim();
+  if(!name)return;
+  if(editStudent)Object.assign(editStudent,{name,rate,subject,colorIdx:selColor});
+  else students.push({id:Date.now().toString(),name,rate,subject,colorIdx:selColor});
+  save();renderAll();document.getElementById('student-modal').classList.remove('open');
+});
+
+// ══ LESSON MODAL ══════════════════════════════════════════════════
+function populateSel(){document.getElementById('l-student').innerHTML=students.map(s=>`<option value="${s.id}">${s.name} (₽${s.rate}/hr)</option>`).join('');}
+function updateAmt(){
+  const sid=document.getElementById('l-student').value;
+  const r=parseFloat(document.getElementById('l-rate').value)||(students.find(s=>s.id===sid)?.rate||0);
+  const dur=parseInt(document.getElementById('l-dur').value)||60;
+  document.getElementById('t-amount').textContent=r?fmtR(r*dur/60):'';
+}
+function updPaid(){document.getElementById('paid-toggle').classList.toggle('paid-on',paidSt);}
+function updRecur(){
+  document.getElementById('recur-toggle').classList.toggle('recur-on',recurSt);
+  document.getElementById('recur-sub').classList.toggle('on',recurSt);
+  document.getElementById('recur-badge').textContent=recurSt?'weekly':'one-time';
+  updUntil();
+}
+function updUntil(){
+  const el=document.getElementById('recur-until');
+  if(!recurSt){el.textContent='';return;}
+  const n=parseInt(document.getElementById('recur-n').value)||4;
+  const dt=document.getElementById('l-date').value;
+  if(!dt){el.textContent='';return;}
+  const e=new Date(dt);e.setDate(e.getDate()+(n-1)*7);
+  el.textContent='until '+e.toLocaleDateString('en-GB',{month:'short',day:'numeric'});
+}
+function openAddLesson(dateStr,hour){
+  if(!students.length){openAddStudent();return;}
+  editLesson=null;paidSt=false;recurSt=false;
+  populateSel();
+  document.getElementById('lm-title').textContent='Add Lesson';
+  document.getElementById('l-date').value=dateStr||fmt(new Date());
+  document.getElementById('l-start').value=`${String(hour||9).padStart(2,'0')}:00`;
+  document.getElementById('l-dur').value='60';
+  document.getElementById('l-rate').value='';document.getElementById('l-notes').value='';
+  document.getElementById('lesson-delete').style.display='none';
+  document.getElementById('recur-row').style.display='block';
+  document.getElementById('recur-n').value=4;
+  updPaid();updRecur();updateAmt();
+  document.getElementById('lesson-modal').classList.add('open');
+}
+function openEditLesson(l){
+  editLesson=l;paidSt=l.paid;recurSt=false;
+  populateSel();
+  document.getElementById('lm-title').textContent='Edit Lesson';
+  document.getElementById('l-student').value=l.studentId;
+  document.getElementById('l-date').value=l.date;
+  document.getElementById('l-start').value=l.start;
+  document.getElementById('l-dur').value=l.duration;
+  document.getElementById('l-rate').value=l.rate||'';
+  document.getElementById('l-notes').value=l.notes||'';
+  document.getElementById('lesson-delete').style.display='block';
+  document.getElementById('recur-row').style.display='none';
+  updPaid();updRecur();updateAmt();
+  document.getElementById('lesson-modal').classList.add('open');
+}
+document.getElementById('paid-toggle').addEventListener('click',()=>{paidSt=!paidSt;updPaid();});
+document.getElementById('recur-toggle').addEventListener('click',()=>{recurSt=!recurSt;updRecur();});
+document.getElementById('recur-n').addEventListener('input',updUntil);
+document.getElementById('l-date').addEventListener('change',updUntil);
+['l-student','l-dur','l-rate'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',updateAmt);
+  document.getElementById(id).addEventListener('change',updateAmt);
+});
+document.getElementById('lesson-cancel').addEventListener('click',()=>document.getElementById('lesson-modal').classList.remove('open'));
+document.getElementById('lesson-delete').addEventListener('click',()=>{
+  if(!editLesson)return;
+  lessons=lessons.filter(l=>l!==editLesson);save();renderAll();
+  document.getElementById('lesson-modal').classList.remove('open');
+});
+document.getElementById('lesson-save').addEventListener('click',()=>{
+  const sid=document.getElementById('l-student').value;
+  const date=document.getElementById('l-date').value;
+  const start=document.getElementById('l-start').value;
+  const dur=parseInt(document.getElementById('l-dur').value);
+  const rv=document.getElementById('l-rate').value;
+  const notes=document.getElementById('l-notes').value.trim();
+  if(!sid||!date||!start)return;
+  const base={studentId:sid,start,duration:dur,rate:rv?parseFloat(rv):null,notes,paid:paidSt};
+  if(editLesson){Object.assign(editLesson,{...base,date});}
+  else if(recurSt){
+    const n=Math.min(Math.max(parseInt(document.getElementById('recur-n').value)||4,2),52);
+    const rid=Date.now().toString();
+    for(let i=0;i<n;i++){const d=new Date(date);d.setDate(d.getDate()+i*7);lessons.push({id:`${rid}_${i}`,recurId:rid,recurIndex:i,recurTotal:n,...base,date:fmt(d),paid:false});}
+  }else{lessons.push({id:Date.now().toString(),...base,date});}
+  save();renderAll();document.getElementById('lesson-modal').classList.remove('open');
+});
+
+// ══ NAV ══════════════════════════════════════════════════════════
+document.getElementById('prev-week').addEventListener('click',()=>{weekStart.setDate(weekStart.getDate()-7);renderAll();});
+document.getElementById('next-week').addEventListener('click',()=>{weekStart.setDate(weekStart.getDate()+7);renderAll();});
+document.getElementById('add-lesson-btn').addEventListener('click',()=>openAddLesson(fmt(new Date()),9));
+document.getElementById('add-student-btn').addEventListener('click',openAddStudent);
+
+['setup-modal','student-modal','lesson-modal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+});
+
+// ══ INIT ═════════════════════════════════════════════════════════
+renderAll();
+window.addEventListener('load',()=>setTimeout(initGoogleAuth,600));
+setInterval(()=>{if(document.visibilityState==='visible'&&gToken)pullFromSheets();},5*60*1000);
+</script>
+</body>
+</html>
