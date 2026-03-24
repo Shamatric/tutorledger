@@ -49,10 +49,11 @@
   }
 
   /* PWA / standalone mode — status bar is overlaid, need extra top padding */
-  @media all and (display-mode: standalone) {
-    header {
-      padding-top: max(44px, env(safe-area-inset-top));
-    }
+  body.pwa-mode header {
+    padding-top: max(50px, env(safe-area-inset-top));
+  }
+  body.pwa-mode .sidebar {
+    padding-top: calc(120px + env(safe-area-inset-top));
   }
   .logo { font-family: 'DM Serif Display', serif; font-size: 1.45rem; letter-spacing: -0.5px; flex-shrink: 0; }
   .logo span { color: var(--amber-light); font-style: italic; }
@@ -281,8 +282,6 @@
       box-shadow: var(--shadow-lg);
       padding-top: calc(96px + env(safe-area-inset-top)); /* clear two-row header + notch */
     }
-    @media all and (display-mode: standalone) {
-      .sidebar { padding-top: calc(110px + env(safe-area-inset-top)); }
     }
     .sidebar.open {
       transform: translateX(0);
@@ -503,6 +502,33 @@
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
+// ══ PWA MODE DETECTION ══════════════════════════════════════════
+if (
+  window.navigator.standalone === true ||
+  window.matchMedia('(display-mode: standalone)').matches
+) {
+  document.body.classList.add('pwa-mode');
+}
+
+// ══ SAFE AREA DEBUG (remove after fix) ══════════════════════════
+(function(){
+  const d = document.createElement('div');
+  d.style.cssText = 'position:fixed;bottom:20px;right:10px;background:rgba(0,0,0,0.8);color:#fff;font-size:11px;padding:8px 10px;border-radius:8px;z-index:9999;font-family:monospace;line-height:1.6;pointer-events:none';
+  document.body.appendChild(d);
+  function update(){
+    const s = getComputedStyle(document.documentElement);
+    d.innerHTML =
+      'standalone: ' + (window.navigator.standalone ?? 'n/a') + '<br>' +
+      'pwa-mode: ' + document.body.classList.contains('pwa-mode') + '<br>' +
+      'inset-top: ' + s.getPropertyValue('--sat') + '<br>' +
+      'header-h: ' + document.querySelector('header')?.offsetHeight + 'px';
+  }
+  // expose CSS env vars via custom props
+  document.documentElement.style.setProperty('--sat', 'env(safe-area-inset-top)');
+  setTimeout(update, 500);
+  window.addEventListener('resize', update);
+})();
+
 // ══ CONFIG ══════════════════════════════════════════════════════
 const LS = {
   get: k => { try{ return JSON.parse(localStorage.getItem(k)); }catch{ return null; } },
