@@ -1,5 +1,5 @@
 // TutorLedger Service Worker
-const CACHE = 'tutorledger-v8';
+const CACHE = 'tutorledger-v9';
 const FONTS = 'tutorledger-fonts-v1';
 
 const APP_SHELL = [
