@@ -200,15 +200,92 @@
   .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 140px; color: var(--muted); font-size: 0.8rem; gap: 4px; }
   .empty-state .icon { font-size: 1.7rem; }
 
+  /* SCROLLBAR */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* SIDEBAR TOGGLE BUTTON */
+  .sidebar-toggle {
+    display: none;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.22);
+    color: white;
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .sidebar-toggle:hover { background: rgba(255,255,255,0.22); }
+
+  /* SIDEBAR OVERLAY (mobile backdrop) */
+  .sidebar-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(26,18,8,0.45);
+    z-index: 49;
+  }
+  .sidebar-overlay.open { display: block; }
+
+  /* MOBILE */
+  @media (max-width: 680px) {
+    .sidebar-toggle { display: flex; }
+
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      height: 100%;
+      width: 285px;
+      z-index: 50;
+      transform: translateX(-100%);
+      transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: var(--shadow-lg);
+      padding-top: 60px; /* clear header */
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+
+    .app { display: block; height: auto; }
+    .main { height: auto; }
+
+    .week-grid-wrap { padding: 12px 8px; }
+    .week-grid {
+      grid-template-columns: 38px repeat(7, 1fr);
+      font-size: 0.72rem;
+      min-height: 0;
+    }
+    .day-header { padding: 7px 2px; }
+    .day-name   { font-size: 0.52rem; letter-spacing: 0.5px; }
+    .day-date   { font-size: 0.88rem; }
+    .time-label { height: 52px; }
+    .time-label span { font-size: 0.5rem; }
+    .time-slot  { height: 52px; }
+    .lb-name    { font-size: 0.6rem; }
+    .lb-time, .lb-price, .lb-recur { font-size: 0.52rem; }
+
+    .banners { padding: 10px 8px 0; }
+
+    .header-right { gap: 6px; flex-wrap: nowrap; }
+    #week-label   { font-size: 0.65rem; }
+    .sync-pill    { display: none; }
+
+    .modal { padding: 18px 16px; border-radius: 14px; }
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">Tutor<span>Ledger</span></div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle student panel">
+      <span class="sidebar-toggle-icon">☰</span>
+    </button>
+    <div class="logo">Tutor<span>Ledger</span></div>
+  </div>
   <div class="header-right">
     <div class="week-nav">
       <button id="prev-week">‹</button>
@@ -222,6 +299,8 @@
     <button class="btn btn-ghost" id="add-lesson-btn">+ Lesson</button>
   </div>
 </header>
+
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
 
 <div class="app">
   <aside class="sidebar">
@@ -724,6 +803,33 @@ document.getElementById('add-student-btn').addEventListener('click',openAddStude
 ['setup-modal','student-modal','lesson-modal'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 });
+
+// ══ SIDEBAR TOGGLE (mobile) ═══════════════════════════════════════
+(function(){
+  const toggle   = document.getElementById('sidebar-toggle');
+  const sidebar  = document.querySelector('.sidebar');
+  const overlay  = document.getElementById('sidebar-overlay');
+
+  function openSidebar(){
+    sidebar.classList.add('open');
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeSidebar(){
+    sidebar.classList.remove('open');
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  toggle.addEventListener('click', ()=> sidebar.classList.contains('open') ? closeSidebar() : openSidebar());
+  overlay.addEventListener('click', closeSidebar);
+
+  // Close sidebar when a student is clicked on mobile
+  document.querySelector('.sidebar').addEventListener('click', function(e){
+    if(window.innerWidth <= 680 && e.target.closest('.student-item')){
+      setTimeout(closeSidebar, 120);
+    }
+  });
+})();
 
 // ══ INIT ═════════════════════════════════════════════════════════
 renderAll();
