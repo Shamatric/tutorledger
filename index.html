@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>TutorLedger</title>
 
 <!-- PWA -->
@@ -493,6 +493,19 @@
   </div>
 </div>
 
+<!-- ══ RECUR SCOPE DIALOG ════════════════════════════════════ -->
+<div class="modal-overlay" id="recur-scope-modal">
+  <div class="modal" style="max-width:340px;text-align:center">
+    <h2 id="rsd-title" style="font-size:1.1rem;margin-bottom:8px">Edit recurring lesson</h2>
+    <p id="rsd-desc" style="font-size:0.8rem;color:var(--muted);margin-bottom:20px;line-height:1.5"></p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-secondary" id="rsd-this" style="padding:11px;font-size:0.86rem">This lesson only</button>
+      <button class="btn btn-primary"   id="rsd-all"  style="padding:11px;font-size:0.86rem">This &amp; all future lessons</button>
+      <button class="btn btn-secondary" id="rsd-cancel" style="padding:9px;font-size:0.8rem;color:var(--muted)">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Google Identity Services -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <script>
@@ -886,27 +899,101 @@ document.getElementById('l-date').addEventListener('change',updUntil);
   document.getElementById(id).addEventListener('change',updateAmt);
 });
 document.getElementById('lesson-cancel').addEventListener('click',()=>document.getElementById('lesson-modal').classList.remove('open'));
+
+// ── Recur scope helper ────────────────────────────────────────────
+function askRecurScope(title, desc, onThis, onAll, onCancel){
+  document.getElementById('rsd-title').textContent = title;
+  document.getElementById('rsd-desc').textContent  = desc;
+  document.getElementById('recur-scope-modal').classList.add('open');
+  const cleanup = () => document.getElementById('recur-scope-modal').classList.remove('open');
+  document.getElementById('rsd-this').onclick   = () => { cleanup(); onThis();   };
+  document.getElementById('rsd-all').onclick    = () => { cleanup(); onAll();    };
+  document.getElementById('rsd-cancel').onclick = () => { cleanup(); if(onCancel) onCancel(); };
+}
+
 document.getElementById('lesson-delete').addEventListener('click',()=>{
-  if(!editLesson)return;
-  lessons=lessons.filter(l=>l!==editLesson);save();renderAll();
-  document.getElementById('lesson-modal').classList.remove('open');
+  if(!editLesson) return;
+  const doDelete = (all) => {
+    if(all && editLesson.recurId){
+      lessons = lessons.filter(l => !(l.recurId === editLesson.recurId && l.recurIndex >= editLesson.recurIndex));
+    } else {
+      lessons = lessons.filter(l => l !== editLesson);
+    }
+    save(); renderAll();
+    document.getElementById('lesson-modal').classList.remove('open');
+  };
+  if(editLesson.recurId){
+    askRecurScope(
+      'Delete recurring lesson',
+      'Do you want to delete just this lesson, or this one and all future lessons in the series?',
+      () => doDelete(false),
+      () => doDelete(true)
+    );
+  } else {
+    if(!confirm('Delete this lesson?')) return;
+    doDelete(false);
+  }
 });
+
 document.getElementById('lesson-save').addEventListener('click',()=>{
-  const sid=document.getElementById('l-student').value;
-  const date=document.getElementById('l-date').value;
-  const start=document.getElementById('l-start').value;
-  const dur=parseInt(document.getElementById('l-dur').value);
-  const rv=document.getElementById('l-rate').value;
-  const notes=document.getElementById('l-notes').value.trim();
-  if(!sid||!date||!start)return;
-  const base={studentId:sid,start,duration:dur,rate:rv?parseFloat(rv):null,notes,paid:paidSt};
-  if(editLesson){Object.assign(editLesson,{...base,date});}
-  else if(recurSt){
+  const sid   = document.getElementById('l-student').value;
+  const date  = document.getElementById('l-date').value;
+  const start = document.getElementById('l-start').value;
+  const dur   = parseInt(document.getElementById('l-dur').value);
+  const rv    = document.getElementById('l-rate').value;
+  const notes = document.getElementById('l-notes').value.trim();
+  if(!sid||!date||!start) return;
+  const base = {studentId:sid,start,duration:dur,rate:rv?parseFloat(rv):null,notes,paid:paidSt};
+
+  const doSave = (all) => {
+    if(all && editLesson.recurId){
+      // Update this + all future in the series
+      lessons.forEach(l => {
+        if(l.recurId === editLesson.recurId && l.recurIndex >= editLesson.recurIndex){
+          // shift date by same day-of-week offset
+          const origDate = new Date(editLesson.date);
+          const thisDate = new Date(l.date);
+          const diff = Math.round((thisDate - origDate) / (7*24*3600*1000));
+          const newBase = new Date(date);
+          newBase.setDate(newBase.getDate() + diff * 7);
+          Object.assign(l, {...base, date: fmt(newBase)});
+        }
+      });
+    } else {
+      Object.assign(editLesson, {...base, date});
+      // detach from recur series if editing only this one
+      if(editLesson.recurId){
+        delete editLesson.recurId;
+        delete editLesson.recurIndex;
+        delete editLesson.recurTotal;
+      }
+    }
+    save(); renderAll();
+    document.getElementById('lesson-modal').classList.remove('open');
+  };
+
+  if(editLesson){
+    if(editLesson.recurId){
+      askRecurScope(
+        'Edit recurring lesson',
+        'Do you want to change just this lesson, or this one and all future lessons in the series?',
+        () => doSave(false),
+        () => doSave(true)
+      );
+    } else {
+      doSave(false);
+    }
+  } else if(recurSt){
     const n=Math.min(Math.max(parseInt(document.getElementById('recur-n').value)||4,2),52);
     const rid=Date.now().toString();
     for(let i=0;i<n;i++){const d=new Date(date);d.setDate(d.getDate()+i*7);lessons.push({id:`${rid}_${i}`,recurId:rid,recurIndex:i,recurTotal:n,...base,date:fmt(d),paid:false});}
-  }else{lessons.push({id:Date.now().toString(),...base,date});}
-  save();renderAll();document.getElementById('lesson-modal').classList.remove('open');
+    save(); renderAll();
+    document.getElementById('lesson-modal').classList.remove('open');
+  } else {
+    lessons.push({id:Date.now().toString(),...base,date});
+    save(); renderAll();
+    document.getElementById('lesson-modal').classList.remove('open');
+  }
 });
 
 // ══ NAV ══════════════════════════════════════════════════════════
@@ -915,7 +1002,7 @@ document.getElementById('next-week').addEventListener('click',()=>{weekStart.set
 document.getElementById('add-lesson-btn').addEventListener('click',()=>openAddLesson(fmt(new Date()),9));
 document.getElementById('add-student-btn').addEventListener('click',openAddStudent);
 
-['setup-modal','student-modal','lesson-modal'].forEach(id=>{
+['setup-modal','student-modal','lesson-modal','recur-scope-modal'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 });
 
