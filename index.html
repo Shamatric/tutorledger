@@ -708,8 +708,14 @@ function renderStudents(){
 function renderEarnings(){
   const now=new Date(),wEnd=new Date(weekStart);wEnd.setDate(wEnd.getDate()+7);
   const mS=new Date(now.getFullYear(),now.getMonth(),1);
+  const mE=new Date(now.getFullYear(),now.getMonth()+1,1); // first day of next month
   let w=0,m=0,pd=0,up=0;
-  lessons.forEach(l=>{const p=price(l),d=new Date(l.date);if(d>=weekStart&&d<wEnd)w+=p;if(d>=mS)m+=p;if(l.paid)pd+=p;else up+=p;});
+  lessons.forEach(l=>{
+    const p=price(l),d=new Date(l.date);
+    if(d>=weekStart&&d<wEnd) w+=p;
+    if(d>=mS&&d<mE) m+=p;
+    if(d>=mS&&d<mE){ if(l.paid) pd+=p; else up+=p; }
+  });
   document.getElementById('earn-week').textContent=fmtR(w);
   document.getElementById('earn-month').textContent=fmtR(m);
   document.getElementById('earn-paid').textContent=fmtR(pd);
