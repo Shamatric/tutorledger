@@ -848,8 +848,10 @@ function openEditStudent(s){
 document.getElementById('student-cancel').addEventListener('click',()=>document.getElementById('student-modal').classList.remove('open'));
 document.getElementById('student-delete').addEventListener('click',()=>{
   if(!editStudent)return;
-  if(!confirm(`Delete ${editStudent.name}? Their lessons will stay.`))return;
-  students=students.filter(s=>s!==editStudent);save();renderAll();
+  if(!confirm(`Delete ${editStudent.name} and all their lessons?`))return;
+  lessons=lessons.filter(l=>l.studentId!==editStudent.id);
+  students=students.filter(s=>s!==editStudent);
+  save();renderAll();
   document.getElementById('student-modal').classList.remove('open');
 });
 document.getElementById('student-save').addEventListener('click',()=>{
