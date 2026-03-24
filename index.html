@@ -481,7 +481,7 @@
       </div>
       <div class="recur-sub" id="recur-sub">
         <label>Repeat for</label>
-        <input type="number" id="recur-n" value="4" min="2" max="52">
+        <input type="number" id="recur-n" value="52" min="2" max="104">
         <span style="font-size:0.8rem;font-weight:600;color:var(--blue)">weeks</span>
         <span class="recur-until" id="recur-until"></span>
       </div>
@@ -728,14 +728,34 @@ function renderBanners(){
     el.innerHTML+=`<div class="banner setup"><div class="b-icon">☁️</div><div class="b-text"><div class="b-title">Set up Google Sheets sync</div><div class="b-detail">Sync across iPhone &amp; Mac automatically</div></div><button class="b-btn" id="open-setup-btn">Set up →</button></div>`;
     document.getElementById('open-setup-btn')?.addEventListener('click',openSetup);
   }
-  const ul=lessons.filter(l=>!l.paid),ut=ul.reduce((a,l)=>a+price(l),0);
+  const now2=new Date();
+  const mS2=new Date(now2.getFullYear(),now2.getMonth(),1);
+  const mE2=new Date(now2.getFullYear(),now2.getMonth()+1,1);
+  const ul=lessons.filter(l=>!l.paid&&new Date(l.date)>=mS2&&new Date(l.date)<mE2);
+  const ut=ul.reduce((a,l)=>a+price(l),0);
   if(ul.length){
-    el.innerHTML+=`<div class="banner unpaid"><div class="b-icon">💸</div><div class="b-text"><div class="b-title">${ul.length} unpaid lesson${ul.length>1?'s':''}</div><div class="b-detail">${fmtR(ut)} outstanding</div></div><button class="b-btn" id="mark-all-paid">Mark all paid</button></div>`;
+    el.innerHTML+=`<div class="banner unpaid"><div class="b-icon">💸</div><div class="b-text"><div class="b-title">${ul.length} unpaid this month</div><div class="b-detail">${fmtR(ut)} outstanding</div></div><button class="b-btn" id="mark-all-paid">Mark all paid</button></div>`;
     document.getElementById('mark-all-paid')?.addEventListener('click',()=>{lessons.forEach(l=>l.paid=true);save();renderAll();});
   }
 }
 
 function renderAll(){renderWeekGrid();renderStudents();renderEarnings();renderBanners();}
+
+// scroll to 8am on first load
+function scrollTo8am(){
+  const rowH = window.innerWidth <= 680 ? 52 : 60;
+  const offset = 8 * rowH;
+  // on desktop the .app scrolls; on mobile the whole window scrolls
+  const app = document.querySelector('.app');
+  if(app && app.scrollHeight > app.clientHeight){
+    app.scrollTop = offset;
+  } else {
+    window.scrollTo({top: offset, behavior:'instant'});
+  }
+}
+let _firstRender = true;
+const _origRenderAll = renderAll;
+function renderAll(){_origRenderAll();if(_firstRender){_firstRender=false;setTimeout(scrollTo8am,50);}}
 
 // ══ SETUP MODAL ═══════════════════════════════════════════════════
 function openSetup(){
@@ -878,7 +898,7 @@ function openAddLesson(dateStr,hour){
   document.getElementById('l-rate').value='';document.getElementById('l-notes').value='';
   document.getElementById('lesson-delete').style.display='none';
   document.getElementById('recur-row').style.display='block';
-  document.getElementById('recur-n').value=4;
+  document.getElementById('recur-n').value=52;
   updPaid();updRecur();updateAmt();
   document.getElementById('lesson-modal').classList.add('open');
 }
