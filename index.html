@@ -402,6 +402,24 @@
       </div>
     </div>
     <hr class="sdiv">
+    <div class="setup-step">
+      <div class="stitle" style="margin-bottom:8px">⚡ Already configured on another device?</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary" id="cfg-export-btn" style="flex:1;min-width:120px">📋 Copy config code</button>
+        <button class="btn btn-secondary" id="cfg-import-btn" style="flex:1;min-width:120px">📥 Paste config code</button>
+      </div>
+      <div id="cfg-export-out" style="display:none;margin-top:8px">
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Copy this code and paste it on your other device:</div>
+        <textarea id="cfg-export-text" readonly style="width:100%;height:72px;font-family:'DM Mono',monospace;font-size:0.65rem;padding:7px;border:1.5px solid var(--border);border-radius:8px;resize:none;background:var(--cream);color:var(--ink)"></textarea>
+        <button class="btn btn-primary" id="cfg-copy-btn" style="width:100%;margin-top:6px">Copy to clipboard</button>
+      </div>
+      <div id="cfg-import-in" style="display:none;margin-top:8px">
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Paste the config code from your other device:</div>
+        <textarea id="cfg-import-text" placeholder="Paste code here…" style="width:100%;height:72px;font-family:'DM Mono',monospace;font-size:0.65rem;padding:7px;border:1.5px solid var(--border);border-radius:8px;resize:none;background:white;color:var(--ink)"></textarea>
+        <button class="btn btn-primary" id="cfg-import-apply" style="width:100%;margin-top:6px">Apply &amp; Connect</button>
+      </div>
+    </div>
+    <hr class="sdiv">
     <div class="modal-actions">
       <button class="btn btn-secondary" id="setup-cancel">Skip for now</button>
       <button class="btn btn-primary"   id="setup-save">Save &amp; Connect</button>
@@ -604,7 +622,7 @@ document.getElementById('sync-pill').addEventListener('click',()=>{
 });
 
 // ══ RENDER ═══════════════════════════════════════════════════════
-const HOURS=Array.from({length:14},(_,i)=>i+7);
+const HOURS=Array.from({length:24},(_,i)=>i);
 const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
 function renderWeekGrid(){
@@ -706,7 +724,53 @@ document.getElementById('setup-save').addEventListener('click',()=>{
   if(tokenClient)tokenClient.requestAccessToken({prompt:'consent'});
 });
 
-// ══ STUDENT MODAL ═════════════════════════════════════════════════
+// ══ CONFIG EXPORT / IMPORT ════════════════════════════════════════
+document.getElementById('cfg-export-btn').addEventListener('click', () => {
+  if (!isConfigured()) { alert('Nothing to export — fill in your credentials first and save.'); return; }
+  const code = btoa(JSON.stringify(cfg));
+  document.getElementById('cfg-export-text').value = code;
+  document.getElementById('cfg-export-out').style.display = 'block';
+  document.getElementById('cfg-import-in').style.display  = 'none';
+});
+
+document.getElementById('cfg-copy-btn').addEventListener('click', () => {
+  const text = document.getElementById('cfg-export-text').value;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('cfg-copy-btn');
+    btn.textContent = '✓ Copied!'; btn.style.background = 'var(--green)';
+    setTimeout(() => { btn.textContent = 'Copy to clipboard'; btn.style.background = ''; }, 2000);
+  }).catch(() => {
+    document.getElementById('cfg-export-text').select();
+    document.execCommand('copy');
+  });
+});
+
+document.getElementById('cfg-import-btn').addEventListener('click', () => {
+  document.getElementById('cfg-import-in').style.display  = 'block';
+  document.getElementById('cfg-export-out').style.display = 'none';
+});
+
+document.getElementById('cfg-import-apply').addEventListener('click', () => {
+  const raw = document.getElementById('cfg-import-text').value.trim();
+  try {
+    const parsed = JSON.parse(atob(raw));
+    if (!parsed.apiKey || !parsed.clientId || !parsed.sheetId) throw new Error();
+    cfg = parsed;
+    LS.set('tl_cfg', cfg);
+    // Fill the fields visually too
+    document.getElementById('cfg-apikey').value   = cfg.apiKey;
+    document.getElementById('cfg-clientid').value = cfg.clientId;
+    document.getElementById('cfg-sheetid').value  = cfg.sheetId;
+    document.getElementById('setup-modal').classList.remove('open');
+    renderBanners();
+    initGoogleAuth();
+    if (tokenClient) tokenClient.requestAccessToken({ prompt: 'consent' });
+  } catch {
+    alert('Invalid config code — make sure you copied the full text.');
+  }
+});
+
+
 function buildColorPicker(sel){
   const cp=document.getElementById('color-picker');cp.innerHTML='';
   COLORS.forEach((c,i)=>{
