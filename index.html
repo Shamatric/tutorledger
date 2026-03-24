@@ -200,6 +200,19 @@
   .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 140px; color: var(--muted); font-size: 0.8rem; gap: 4px; }
   .empty-state .icon { font-size: 1.7rem; }
 
+  /* OFFLINE BANNER */
+  #offline-bar {
+    display: none;
+    background: #374151;
+    color: #e5e7eb;
+    font-size: 0.72rem;
+    text-align: center;
+    padding: 5px 12px;
+    position: sticky; top: 55px; z-index: 99;
+    letter-spacing: 0.2px;
+  }
+  #offline-bar.show { display: block; }
+
   /* SCROLLBAR */
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -299,6 +312,8 @@
     <button class="btn btn-ghost" id="add-lesson-btn">+ Lesson</button>
   </div>
 </header>
+
+<div id="offline-bar">⚡ Offline — changes saved locally, will sync when reconnected</div>
 
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
@@ -803,6 +818,30 @@ document.getElementById('add-student-btn').addEventListener('click',openAddStude
 ['setup-modal','student-modal','lesson-modal'].forEach(id=>{
   document.getElementById(id).addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 });
+
+// ══ SERVICE WORKER ════════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW:', e));
+  });
+}
+
+// ══ OFFLINE INDICATOR ════════════════════════════════════════════
+(function(){
+  const bar = document.getElementById('offline-bar');
+  function update(){
+    bar.classList.toggle('show', !navigator.onLine);
+    // When coming back online, try to sync if we have a token
+    if(navigator.onLine && gToken && isConfigured()){
+      setSyncStatus('syncing','Syncing…');
+      clearTimeout(syncTmr);
+      syncTmr = setTimeout(pushToSheets, 1000);
+    }
+  }
+  window.addEventListener('online',  update);
+  window.addEventListener('offline', update);
+  update();
+})();
 
 // ══ SIDEBAR TOGGLE (mobile) ═══════════════════════════════════════
 (function(){
