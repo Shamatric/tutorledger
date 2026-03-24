@@ -270,7 +270,6 @@
     .btn-ghost  { font-size: 0.78rem; padding: 6px 10px; white-space: nowrap; }
 
     .sidebar-toggle { display: flex; }
-
     .sidebar {
       position: fixed;
       top: 0; left: 0;
@@ -280,14 +279,9 @@
       transform: translateX(-100%);
       transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
       box-shadow: var(--shadow-lg);
-      padding-top: calc(96px + env(safe-area-inset-top)); /* clear two-row header + notch */
+      padding-top: calc(96px + env(safe-area-inset-top));
     }
-    }
-    .sidebar.open {
-      transform: translateX(0);
-    }
-
-    .main { height: auto; overflow-x: hidden; }
+    .sidebar.open { transform: translateX(0); }
 
     .week-grid-wrap {
       padding: 10px 0 10px 8px;
@@ -314,11 +308,6 @@
     .lb-time, .lb-price, .lb-recur { font-size: 0.52rem; }
 
     .banners { padding: 10px 8px 0; }
-
-    .header-right { gap: 6px; flex-wrap: nowrap; }
-    #week-label   { font-size: 0.65rem; }
-    .sync-pill    { display: none; }
-
     .modal { padding: 18px 16px; border-radius: 14px; }
   }
 </style>
@@ -342,6 +331,7 @@
       <div class="sync-dot" id="sync-dot"></div>
       <span id="sync-lbl">Not connected</span>
     </div>
+    <button class="btn btn-ghost" id="settings-btn" title="Settings / Config" style="padding:7px 10px;font-size:1rem">⚙️</button>
     <button class="btn btn-ghost" id="add-lesson-btn">+ Lesson</button>
   </div>
 </header>
@@ -637,6 +627,7 @@ document.getElementById('sync-pill').addEventListener('click',()=>{
   if(!gToken)tokenClient?.requestAccessToken({prompt:'consent'});
   else pullFromSheets();
 });
+document.getElementById('settings-btn').addEventListener('click', openSetup);
 
 // ══ RENDER ═══════════════════════════════════════════════════════
 const HOURS=Array.from({length:24},(_,i)=>i);
