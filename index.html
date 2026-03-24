@@ -550,7 +550,8 @@ const COLORS = [
 
 // ══ HELPERS ═════════════════════════════════════════════════════
 function getMonday(d){const dt=new Date(d),day=dt.getDay();dt.setDate(dt.getDate()-day+(day===0?-6:1));dt.setHours(0,0,0,0);return dt;}
-function fmt(d){return d.toISOString().split('T')[0];}
+function parseDate(s){return new Date(s+'T00:00:00');} // force local timezone, not UTC
+function fmt(d){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${dd}`;}
 function fmtR(n){return '₽'+Math.round(n);}
 function fmtT(hhmm){const[h,m]=hhmm.split(':').map(Number),p=h>=12?'pm':'am',h12=h%12||12;return m?`${h12}:${String(m).padStart(2,'0')}${p}`:`${h12}${p}`;}
 function addM(hhmm,m){const[h,mm]=hhmm.split(':').map(Number),t=h*60+mm+m;return `${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;}
@@ -711,7 +712,7 @@ function renderEarnings(){
   const mE=new Date(now.getFullYear(),now.getMonth()+1,1); // first day of next month
   let w=0,m=0,pd=0,up=0;
   lessons.forEach(l=>{
-    const p=price(l),d=new Date(l.date);
+    const p=price(l),d=parseDate(l.date);
     if(d>=weekStart&&d<wEnd) w+=p;
     if(d>=mS&&d<mE) m+=p;
     if(d>=mS&&d<mE){ if(l.paid) pd+=p; else up+=p; }
@@ -731,7 +732,7 @@ function renderBanners(){
   const now2=new Date();
   const mS2=new Date(now2.getFullYear(),now2.getMonth(),1);
   const mE2=new Date(now2.getFullYear(),now2.getMonth()+1,1);
-  const ul=lessons.filter(l=>!l.paid&&new Date(l.date)>=mS2&&new Date(l.date)<mE2);
+  const ul=lessons.filter(l=>!l.paid&&parseDate(l.date)>=mS2&&parseDate(l.date)<mE2);
   const ut=ul.reduce((a,l)=>a+price(l),0);
   if(ul.length){
     el.innerHTML+=`<div class="banner unpaid"><div class="b-icon">💸</div><div class="b-text"><div class="b-title">${ul.length} unpaid this month</div><div class="b-detail">${fmtR(ut)} outstanding</div></div><button class="b-btn" id="mark-all-paid">Mark all paid</button></div>`;
@@ -980,9 +981,9 @@ document.getElementById('lesson-save').addEventListener('click',()=>{
         if(l.recurId === editLesson.recurId && l.recurIndex >= editLesson.recurIndex){
           // shift date by same day-of-week offset
           const origDate = new Date(editLesson.date);
-          const thisDate = new Date(l.date);
+          const thisDate = parseDate(l.date);
           const diff = Math.round((thisDate - origDate) / (7*24*3600*1000));
-          const newBase = new Date(date);
+          const newBase = parseDate(date);
           newBase.setDate(newBase.getDate() + diff * 7);
           Object.assign(l, {...base, date: fmt(newBase)});
         }
@@ -1014,7 +1015,7 @@ document.getElementById('lesson-save').addEventListener('click',()=>{
   } else if(recurSt){
     const n=Math.min(Math.max(parseInt(document.getElementById('recur-n').value)||52,2),104);
     const rid=Date.now().toString();
-    for(let i=0;i<n;i++){const d=new Date(date);d.setDate(d.getDate()+i*7);lessons.push({id:`${rid}_${i}`,recurId:rid,recurIndex:i,recurTotal:n,...base,date:fmt(d),paid:false});}
+    for(let i=0;i<n;i++){const d=parseDate(date);d.setDate(d.getDate()+i*7);lessons.push({id:`${rid}_${i}`,recurId:rid,recurIndex:i,recurTotal:n,...base,date:fmt(d),paid:false});}
     save(); renderAll();
     document.getElementById('lesson-modal').classList.remove('open');
   } else {
