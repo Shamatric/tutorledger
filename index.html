@@ -245,6 +245,8 @@
 
   /* MOBILE */
   @media (max-width: 680px) {
+    body { overflow-x: hidden; }
+    .app { display: block; height: auto; }
     .sidebar-toggle { display: flex; }
 
     .sidebar {
@@ -262,17 +264,18 @@
       transform: translateX(0);
     }
 
-    .app { display: block; height: auto; }
-    .main { height: auto; }
+    .main { height: auto; overflow-x: hidden; }
 
     .week-grid-wrap {
       padding: 12px 8px;
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
+      width: 100%;
     }
     .week-grid {
       grid-template-columns: 38px repeat(7, minmax(52px, 1fr));
-      min-width: 420px;
+      min-width: 480px;
+      width: max-content;
       font-size: 0.72rem;
       min-height: 0;
     }
