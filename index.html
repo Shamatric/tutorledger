@@ -150,13 +150,13 @@
   .time-slot:hover { background: var(--amber-pale); }
   .time-slot:hover::after { content:'+'; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:var(--amber); font-size:1rem; opacity:0.5; }
 
-  .lesson-block { position: absolute; left: 3px; right: 3px; border-radius: 7px; padding: 4px 6px; cursor: pointer; z-index: 2; transition: transform 0.1s, box-shadow 0.1s; overflow: hidden; }
+  .lesson-block { position: absolute; left: 3px; right: 3px; border-radius: 7px; padding: 4px 6px; cursor: pointer; z-index: 2; transition: transform 0.1s, box-shadow 0.1s; overflow: hidden; display: flex; flex-direction: column; }
   .lesson-block:hover { transform: scale(1.02); box-shadow: var(--shadow-lg); z-index: 10; }
-  .lb-name  { font-size: 0.72rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .lb-time  { font-size: 0.6rem; font-family: 'DM Mono', monospace; opacity: 0.75; margin-top: 1px; }
-  .lb-price { font-size: 0.65rem; font-weight: 700; font-family: 'DM Mono', monospace; margin-top: 1px; }
-  .lb-recur { font-size: 0.56rem; opacity: 0.6; margin-top: 1px; }
-  .lb-paid  { position: absolute; top: 3px; right: 4px; font-size: 0.56rem; background: rgba(255,255,255,0.35); border-radius: 3px; padding: 1px 3px; font-weight: 600; }
+  .lb-name  { font-size: 0.72rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+  .lb-time  { font-size: 0.6rem; font-family: 'DM Mono', monospace; opacity: 0.75; margin-top: 1px; white-space: nowrap; overflow: hidden; flex-shrink: 0; }
+  .lb-price { font-size: 0.65rem; font-weight: 700; font-family: 'DM Mono', monospace; margin-top: 1px; flex-shrink: 0; }
+  .lb-recur { font-size: 0.56rem; opacity: 0.6; margin-top: 1px; flex-shrink: 0; }
+  .lb-paid  { position: absolute; top: 3px; right: 4px; font-size: 0.56rem; background: rgba(255,255,255,0.35); border-radius: 3px; padding: 1px 3px; font-weight: 600; white-space: nowrap; }
 
   /* MODALS */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,18,8,0.5); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
@@ -306,6 +306,10 @@
     .time-slot  { height: 52px; }
     .lb-name    { font-size: 0.6rem; }
     .lb-time, .lb-price, .lb-recur { font-size: 0.52rem; }
+
+    .lb-price, .lb-recur, .lb-paid { display: none; }
+    .lb-name  { font-size: 0.58rem; }
+    .lb-time  { font-size: 0.5rem; }
 
     .banners { padding: 10px 8px 0; }
     .modal { padding: 18px 16px; border-radius: 14px; }
