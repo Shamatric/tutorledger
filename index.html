@@ -742,10 +742,12 @@ function renderBanners(){
 function renderAll(){renderWeekGrid();renderStudents();renderEarnings();renderBanners();}
 
 // scroll to 8am on first load
-function scrollTo8am(){
+let _firstRender = true;
+function scrollTo8amOnce(){
+  if(!_firstRender) return;
+  _firstRender = false;
   const rowH = window.innerWidth <= 680 ? 52 : 60;
   const offset = 8 * rowH;
-  // on desktop the .app scrolls; on mobile the whole window scrolls
   const app = document.querySelector('.app');
   if(app && app.scrollHeight > app.clientHeight){
     app.scrollTop = offset;
@@ -753,9 +755,6 @@ function scrollTo8am(){
     window.scrollTo({top: offset, behavior:'instant'});
   }
 }
-let _firstRender = true;
-const _origRenderAll = renderAll;
-function renderAll(){_origRenderAll();if(_firstRender){_firstRender=false;setTimeout(scrollTo8am,50);}}
 
 // ══ SETUP MODAL ═══════════════════════════════════════════════════
 function openSetup(){
@@ -1011,7 +1010,7 @@ document.getElementById('lesson-save').addEventListener('click',()=>{
       doSave(false);
     }
   } else if(recurSt){
-    const n=Math.min(Math.max(parseInt(document.getElementById('recur-n').value)||4,2),52);
+    const n=Math.min(Math.max(parseInt(document.getElementById('recur-n').value)||52,2),104);
     const rid=Date.now().toString();
     for(let i=0;i<n;i++){const d=new Date(date);d.setDate(d.getDate()+i*7);lessons.push({id:`${rid}_${i}`,recurId:rid,recurIndex:i,recurTotal:n,...base,date:fmt(d),paid:false});}
     save(); renderAll();
@@ -1086,6 +1085,7 @@ if ('serviceWorker' in navigator) {
 
 // ══ INIT ═════════════════════════════════════════════════════════
 renderAll();
+setTimeout(scrollTo8amOnce, 80);
 window.addEventListener('load',()=>setTimeout(initGoogleAuth,600));
 setInterval(()=>{if(document.visibilityState==='visible'&&gToken)pullFromSheets();},5*60*1000);
 </script>
